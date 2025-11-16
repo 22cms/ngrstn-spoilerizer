@@ -1,5 +1,5 @@
-from time import time
 import json
+from time import time
 from telethon.extensions import markdown
 from telethon import TelegramClient, events, types
 
@@ -11,7 +11,7 @@ api_id = config["api_id"]
 api_hash = config["api_hash"]
 bot_token = config["bot_token"]
 
-client = TelegramClient('spoiler_bot', api_id, api_hash).start(bot_token=bot_token)
+client = TelegramClient('spoiler_bot_client', api_id, api_hash).start(bot_token=bot_token)
 
 #Command Handling
 @client.on(events.NewMessage(pattern="/start"))
@@ -26,7 +26,7 @@ async def spoilerize_message(event):
         await event.reply('Reply to a message to spoilerize it')
         return
     
-    client.parse_mode = SpoilerParser
+    event.client.parse_mode = SpoilerParser
     caption = f"[{message_to_delete.text}](spoiler)" if message_to_delete.text else "" # Spoilers the caption if there's any
     parser = UserClickableParser(message_to_delete)
 
@@ -44,22 +44,20 @@ async def spoilerize_message(event):
 
 
     if files == []:
-        await event.reply(message=text)
-    elif len(files) == 1:
-        await event.reply(file=files[0], message=text)
+        await event.client.send_message(entity=event.chat_id, message=text)
     else:
         await event.client.send_file(
             entity=event.chat_id, 
-            reply_to=event.message.id, 
             file=files if len(files) > 1 else files[0], 
             caption=text
             )
 
     try:
+        await event.message.delete()
         for message in message_list:
             await message.delete()
     except Exception as e:
-        await event.reply(f"Failed to delete message: make sure the bot has the required admin rights.\n\n{e}")
+        await event.reply(f"Failed to delete messages: make sure the bot has the required admin rights.\n\n{e}")
 
 async def fetch_album(event):
     message_list = []
