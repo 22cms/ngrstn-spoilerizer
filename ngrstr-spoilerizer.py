@@ -19,6 +19,11 @@ async def start(event):
     await event.reply("Hello! I am a Spoiler Bot. Reply to any message with /spoilerize to resend it as a spoiler.")
 
 
+@client.on(events.NewMessage(pattern="/sourcecode"))
+async def sourcecode(event):    
+    await event.reply("https://github.com/22cms/ngrstn-spoilerizer")
+
+
 @client.on(events.NewMessage(pattern="/spoilerize"))
 async def spoilerize_message(event):
     message_to_delete = await event.get_reply_message()
