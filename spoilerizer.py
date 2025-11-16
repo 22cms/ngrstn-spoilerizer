@@ -1,5 +1,5 @@
 import json
-from time import time
+import time
 from telethon.extensions import markdown
 from telethon import TelegramClient, events, types
 
