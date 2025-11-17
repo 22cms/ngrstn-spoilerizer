@@ -92,6 +92,13 @@ class UserClickableParser: # Get ready for a stroke on this one
         self.message = message
         self.sender = message.sender
         self.forward = message.forward
+        self.emojis = {
+            "user": "\U0001F464",
+            "bot": "\U0001F916",
+            "channel": "\U0001F4E2",
+            "incognito": "\U0001F575\U0000FE0F",
+            "unknown": "\U00002754"
+        }
 
     def _clickable(self, sender):
                 return f"@{sender.username}" if getattr(sender, "username", None) else f"[{sender.first_name}](tg://user?id={sender.id})"
@@ -102,11 +109,11 @@ class UserClickableParser: # Get ready for a stroke on this one
                 #If there is a sender, it might be a lot of stuff: a user, a bot or a channel to name a few
                 if isinstance(self.sender, types.User): 
                     # If it's a user, also happens to work with bots
-                    emoji = "\U0001F464" if not self.sender.bot else "\U0001F916"
+                    emoji = self.emojis["user"] if not self.sender.bot else self.emojis["bot"]
                     return f"{emoji} {self._clickable(self.sender)}"
                 
                 elif isinstance(self.sender, types.Channel): 
-                    emoji = "\U0001F4E2"
+                    emoji = self.emojis.channel
                     #if it's a channel sender
                     post_author = None
                     if getattr(self.message, "fwd_from", None):
@@ -117,20 +124,20 @@ class UserClickableParser: # Get ready for a stroke on this one
                     return f'{emoji} [{self.sender.title}](https://t.me/c/{self.sender.id}) {post_credits}' if self.sender.username is None else f"{emoji} {self._clickable(self.sender)} {post_credits}"
                 else:
                     # Fallback
-                    return "\U00002754 Unknown user type"
+                    return f"{self.emojis.unknown} Unknown user type"
 
             elif isinstance(self.message.peer_id, types.PeerChannel): 
                 # If there is no sender. but the peer_id looks like a channel's, it's an anonymous admin (???)
-                emoji = "\U0001F575\U0000FE0F"
+                emoji = self.emojis.incognito
                 return f"{emoji} {self.message.post_author} (anonymous admin)" if self.message.post_author else f"{emoji} Anonymous admin"
 
             else: 
                 # i have no idea tbh
-                return "\U00002754 Unknown user"
+                return f"{self.emojis.unknown} Unknown user"
             
         except Exception as e:
             print(e)
-            return "\U00002754 Unknown user"
+            return f"{self.emojis.unknown} Unknown user"
     def is_forward(self):
         return self.forward and (self.forward.sender is None or self.forward.sender.id != self.sender.id)
 
@@ -139,10 +146,10 @@ class UserClickableParser: # Get ready for a stroke on this one
             if self.forward:
                 if self.forward.sender:  
                     # If the sender is known, it might be a known user or bot
-                    emoji = "\U0001F464" if not self.forward.sender.bot else "\U0001F916"
+                    emoji = self.emojis.user if not self.forward.sender.bot else self.emojis.bot
                     return f"{emoji} {self._clickable(self.forward.sender)}"
                 elif self.forward.chat is not None:
-                    emoji = "\U0001F4E2" if isinstance(self.forward.chat, types.Channel) and self.forward.chat.megagroup is False else "\U0001F575\U0000FE0F"
+                    emoji = self.emojis.channel if isinstance(self.forward.chat, types.Channel) and self.forward.chat.megagroup is False else self.emojis.incognito
                     #If it's not known, it might be a channel or an anonymous admin forward
                     channel_post = self.forward.channel_post or ""
                     post_credits = ""
@@ -153,13 +160,12 @@ class UserClickableParser: # Get ready for a stroke on this one
 
                 else:
                     # Last check: anonymous user forward or just unknown
-                    anon_emoji = "\U0001F575\U0000FE0F"
-                    return f"{anon_emoji} {getattr(self.message.forward, 'from_name', None) or '\U00002754 Unknown forward'}"
+                    return f"{self.emojis.anonymous} {getattr(self.message.forward, 'from_name', None)}" or f'{self.emojis.unknown} Unknown forward'
             else:
-                return "\U00002754 Unknown forward"
+                return f"{self.emojis.unknown} Unknown forward"
         except Exception as e:
             print(e)
-            return "\U00002754 Unknown forward"
+            return f"{self.emojis.unknown} Unknown forward"
         
 
 # Main Loop to keep the bot running
