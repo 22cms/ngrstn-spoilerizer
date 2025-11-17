@@ -93,37 +93,66 @@ class UserClickableParser: # Get ready for a stroke on this one
         self.forward = message.forward
 
     def _clickable(self, sender):
-        return f"@{sender.username}" if sender.username else f"[{sender.first_name}](tg://user?id={sender.id})"
+                if getattr(sender, "username", None):
+                    return f"@{sender.username}"
+                return f"[{sender.first_name}](tg://user?id={sender.id})"
         
     def parse_user(self):
-        if self.sender != None: #If there is a sender, it might be a lot of stuff: a user, a bot or a channel to name a few
-            if isinstance(self.sender, types.User): # If it's a user, also happens to work with bots
-                return self._clickable(self.sender)
-            elif isinstance(self.sender, types.Channel): #if it's a channel
-                post_credits = f"({self.message.fwd_from.post_author})" if self.message.fwd_from.post_author else ""
-                return f'[{self.sender.title}](https://t.me/c/{self.sender.id}) {post_credits}' if self.sender.username is None else f"{self._clickable(self.sender)} {post_credits}"
-            else:
-                return "Unknown user type"
+        try:
+            if self.sender != None: 
+                #If there is a sender, it might be a lot of stuff: a user, a bot or a channel to name a few
+                if isinstance(self.sender, types.User): 
+                    # If it's a user, also happens to work with bots
+                    return self._clickable(self.sender)
+                
+                elif isinstance(self.sender, types.Channel): 
+                    #if it's a channel sender
+                    post_author = None
+                    if getattr(self.message, "fwd_from", None):
+                        post_author = self.message.fwd_from.post_author
+                    elif getattr(self.message, "post_author", None):
+                        post_author = self.message.post_author
+                    post_credits = f"({post_author})" if post_author else ""
+                    return f'[{self.sender.title}](https://t.me/c/{self.sender.id}) {post_credits}' if self.sender.username is None else f"{self._clickable(self.sender)} {post_credits}"
+                else:
+                    return "Unknown user type"
 
-        elif isinstance(self.message.peer_id, types.PeerChannel): # If there is no sender. but the peer_id looks like a channel's, it's an anonymous admin (???)
-            return f"{self.message.post_author} (anonymous admin)" if self.message.post_author else "Anonymous admin"
+            elif isinstance(self.message.peer_id, types.PeerChannel): 
+                # If there is no sender. but the peer_id looks like a channel's, it's an anonymous admin (???)
+                return f"{self.message.post_author} (anonymous admin)" if self.message.post_author else "Anonymous admin"
 
-        else: # i have no idea tbh
+            else: 
+                # i have no idea tbh
+                return "Unknown user"
+            
+        except Exception as e:
+            print(e)
             return "Unknown user"
 
     def is_forward(self):
         return self.forward and (self.forward.sender is None or self.forward.sender.id != self.sender.id)
 
     def parse_forward(self):
-        if self.forward:
-            if self.forward.sender:  # If the sender is known, it might be a known user or bot
-                return self._clickable(self.forward.sender)
-            elif self.forward.chat is not None: #If it's not known, it might be a channel or an anonymous admin forward
-                channel_post = self.forward.channel_post or ""
-                return f"[{self.forward.chat.title}](https://t.me/c/{self.forward.chat.id}/{channel_post})"
+        try:
+            if self.forward:
+                if self.forward.sender:  
+                    # If the sender is known, it might be a known user or bot
+                    return self._clickable(self.forward.sender)
+                elif self.forward.chat is not None: 
+                    #If it's not known, it might be a channel or an anonymous admin forward
+                    channel_post = self.forward.channel_post or ""
+                    post_credits = ""
+                    if getattr(self.forward, "post_author", None):
+                        post_credits = f"({self.forward.post_author})"
+                    chat_title = f"@{self.forward.chat.username}" if getattr(self.forward.chat, "username", None) else self.forward.chat.title
+                    return f'[{chat_title}](https://t.me/c/{self.forward.chat.id}/{channel_post}) {post_credits}'
+
+                else:
+                    return self.message.forward.from_name or "Unknown forward"
             else:
-                return self.message.forward.from_name or "Unknown forward"
-        else:
+                return "Unknown forward"
+        except Exception as e:
+            print(e)
             return "Unknown forward"
         
 
