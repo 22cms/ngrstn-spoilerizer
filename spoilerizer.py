@@ -7,11 +7,7 @@ from telethon import TelegramClient, events, types
 with open("config.json", "r") as f:
     config = json.load(f)
 
-api_id = config["api_id"]
-api_hash = config["api_hash"]
-bot_token = config["bot_token"]
-
-client = TelegramClient('spoiler_bot_client', api_id, api_hash).start(bot_token=bot_token)
+client = TelegramClient('spoiler_bot_client', config["api_id"], config["api_hash"]).start(bot_token=config["bot_token"])
 
 #Command Handling
 @client.on(events.NewMessage(pattern="/start"))
