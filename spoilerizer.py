@@ -152,8 +152,9 @@ class UserClickableParser: # Get ready for a stroke on this one
                     return f'{emoji} [{chat_title}](https://t.me/c/{self.forward.chat.id}/{channel_post}) {post_credits}'
 
                 else:
-                    # Fallback
-                    return getattr(self.message.forward, "from_name", None) or "\U00002754 Unknown forward"
+                    # Last check: anonymous user forward or just unknown
+                    anon_emoji = "\U0001F575\U0000FE0F"
+                    return f"{anon_emoji} {getattr(self.message.forward, 'from_name', None) or '\U00002754 Unknown forward'}"
             else:
                 return "\U00002754 Unknown forward"
         except Exception as e:
