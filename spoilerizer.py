@@ -179,7 +179,7 @@ while True:
         client.on(events.NewMessage(pattern="/spoilerize"))(spoilerize_message)
         
         # Start the bot     
-        print("Bot is running...")  
+        print("Bot is running...")
         client.run_until_disconnected()        
 
 
