@@ -93,12 +93,21 @@ class UserClickableParser: # Get ready for a stroke on this one
         self.message = message
         self.sender = message.sender
         self.forward = message.forward
+        # Temporarily disabled emojis
+        # self.emojis = {
+        #     "user": "\U0001F464",
+        #     "bot": "\U0001F916",
+        #     "channel": "\U0001F4E2",
+        #     "incognito": "\U0001F575\U0000FE0F",
+        #     "unknown": "\U00002754"
+        # }
+
         self.emojis = {
-            "user": "\U0001F464",
-            "bot": "\U0001F916",
-            "channel": "\U0001F4E2",
-            "incognito": "\U0001F575\U0000FE0F",
-            "unknown": "\U00002754"
+            "user": "",
+            "bot": "",
+            "channel": "",
+            "incognito": "",
+            "unknown": ""
         }
 
     def _clickable(self, sender):
