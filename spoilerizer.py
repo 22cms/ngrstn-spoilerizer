@@ -21,14 +21,14 @@ async def spoilerize_message(event):
     if not message_to_delete:
         await event.reply('Reply to a message to spoilerize it')
         return
-    
+
     event.client.parse_mode = SpoilerParser
     caption = f"[{message_to_delete.text}](spoiler)" if message_to_delete.text else "" # Spoilers the caption if there's any
     parser = UserClickableParser(message_to_delete)
 
-    credits = f" ~ {parser.parse_user()}" 
+    credits = f" — {parser.parse_user()}" 
     if parser.is_forward():
-        credits = f" ~ {parser.parse_forward()} \u21aa\ufe0f {parser.parse_user()}" 
+        credits = f" — {parser.parse_forward()} \u21aa\ufe0f {parser.parse_user()}" 
     text = f'{caption}\n\n{credits}' 
     
     files = []
@@ -110,7 +110,7 @@ class UserClickableParser: # Get ready for a stroke on this one
                 if isinstance(self.sender, types.User): 
                     # If it's a user, also happens to work with bots
                     emoji = self.emojis['user'] if not self.sender.bot else self.emojis['bot']
-                    return f"{emoji} {self._clickable(self.sender)}"
+                    return f"{emoji} __{self._clickable(self.sender)}__"
                 
                 elif isinstance(self.sender, types.Channel): 
                     emoji = self.emojis['channel']
@@ -121,23 +121,25 @@ class UserClickableParser: # Get ready for a stroke on this one
                     elif getattr(self.message, "post_author", None):
                         post_author = self.message.post_author
                     post_credits = f"({post_author})" if post_author else ""
-                    return f'{emoji} [{self.sender.title}](https://t.me/c/{self.sender.id}) {post_credits}' if self.sender.username is None else f"{emoji} {self._clickable(self.sender)} {post_credits}"
+                    if self.sender.username is None:
+                        return f'{emoji} __[{self.sender.title}](https://t.me/c/{self.sender.id})__ __{post_credits}__'
+                    return f"{emoji} __{self._clickable(self.sender)}__ __{post_credits}__"
                 else:
                     # Fallback
-                    return f"{self.emojis['unknown']} Unknown user type"
+                    return f"{self.emojis['unknown']} __Unknown user type__"
 
             elif isinstance(self.message.peer_id, types.PeerChannel): 
                 # If there is no sender. but the peer_id looks like a channel's, it's an anonymous admin (???)
                 emoji = self.emojis['incognito']
-                return f"{emoji} {self.message.post_author} (anonymous admin)" if self.message.post_author else f"{emoji} Anonymous admin"
+                return f"{emoji} __{self.message.post_author} (anonymous admin)__" if self.message.post_author else f"{emoji} __Anonymous admin__"
 
             else: 
                 # i have no idea tbh
-                return f"{self.emojis['unknown']} Unknown user"
+                return f"{self.emojis['unknown']} __Unknown user__"
             
         except Exception as e:
             print(e)
-            return f"{self.emojis['unknown']} Unknown user"
+            return f"{self.emojis['unknown']} __Unknown user__"
     def is_forward(self):
         return self.forward and (self.forward.sender is None or self.forward.sender.id != self.sender.id)
 
@@ -147,7 +149,7 @@ class UserClickableParser: # Get ready for a stroke on this one
                 if self.forward.sender:  
                     # If the sender is known, it might be a known user or bot
                     emoji = self.emojis['user'] if not self.forward.sender.bot else self.emojis['bot']
-                    return f"{emoji} {self._clickable(self.forward.sender)}"
+                    return f"{emoji} __{self._clickable(self.forward.sender)}__"
                 elif self.forward.chat is not None:
                     emoji = self.emojis['channel'] if isinstance(self.forward.chat, types.Channel) and self.forward.chat.megagroup is False else self.emojis['incognito']
                     #If it's not known, it might be a channel or an anonymous admin forward
@@ -156,16 +158,16 @@ class UserClickableParser: # Get ready for a stroke on this one
                     if getattr(self.forward, "post_author", None):
                         post_credits = f"({self.forward.post_author})"
                     chat_title = f"@{self.forward.chat.username}" if getattr(self.forward.chat, "username", None) else self.forward.chat.title
-                    return f'{emoji} [{chat_title}](https://t.me/c/{self.forward.chat.id}/{channel_post}) {post_credits}'
+                    return f'{emoji} __[{chat_title}](https://t.me/c/{self.forward.chat.id}/{channel_post})__ __{post_credits}__'
 
                 else:
                     # Last check: anonymous user forward or just unknown
-                    return f"{self.emojis['incognito']} {getattr(self.message.forward, 'from_name', None)}" or f"{self.emojis['unknown']} Unknown forward"
+                    return f"{self.emojis['incognito']} __{getattr(self.message.forward, 'from_name', None)}__" or f"{self.emojis['unknown']} __Unknown forward__"
             else:
-                return f"{self.emojis['unknown']} Unknown forward"
+                return f"{self.emojis['unknown']} __Unknown forward__"
         except Exception as e:
             print(e)
-            return f"{self.emojis['unknown']} Unknown forward"
+            return f"{self.emojis['unknown']} __Unknown forward__"
         
 
 # Main Loop to keep the bot running
