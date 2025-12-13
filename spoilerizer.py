@@ -28,7 +28,8 @@ async def spoilerize_message(event):
 
     credits = f" — {parser.parse_user()}" 
     if parser.is_forward():
-        credits = f" — {parser.parse_forward()} \u21aa\ufe0f {parser.parse_user()}" 
+        spc = " " if caption != "" else ""
+        credits = f"{spc}⤷  {parser.parse_forward()}\n{spc}— {parser.parse_user()}" 
     text = f'{caption}\n\n{credits}' 
     
     files = []
@@ -120,10 +121,10 @@ class UserClickableParser: # Get ready for a stroke on this one
                         post_author = self.message.fwd_from.post_author
                     elif getattr(self.message, "post_author", None):
                         post_author = self.message.post_author
-                    post_credits = f"({post_author})" if post_author else ""
+                    post_credits = f"(__{post_author}__)" if post_author else ""
                     if self.sender.username is None:
-                        return f'{emoji} __[{self.sender.title}](https://t.me/c/{self.sender.id})__ __{post_credits}__'
-                    return f"{emoji} __{self._clickable(self.sender)}__ __{post_credits}__"
+                        return f'{emoji} __[{self.sender.title}](https://t.me/c/{self.sender.id})__ {post_credits}'
+                    return f"{emoji} __{self._clickable(self.sender)}__ {post_credits}"
                 else:
                     # Fallback
                     return f"{self.emojis['unknown']} __Unknown user type__"
