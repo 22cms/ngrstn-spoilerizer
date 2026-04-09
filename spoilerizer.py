@@ -1,5 +1,6 @@
 import json
 import time
+import asyncio
 from telethon.extensions import markdown
 from telethon import TelegramClient, events, types
 
@@ -181,20 +182,29 @@ class UserClickableParser: # Get ready for a stroke on this one
         
 
 # Main Loop to keep the bot running
-while True:
-    try:
-        client = TelegramClient('spoiler_bot_client', config['api_id'], config['api_hash']).start(bot_token=config['bot_token'])
-
-        # Command Handling
-        client.on(events.NewMessage(pattern="/start"))(start)
-        client.on(events.NewMessage(pattern="/sourcecode"))(sourcecode)
-        client.on(events.NewMessage(pattern="/spoilerize"))(spoilerize_message)
+async def main():
+    while True:
+        client = TelegramClient('spoiler_bot_client', config['api_id'], config['api_hash'])
         
-        # Start the bot     
-        print("Bot is running...")
-        client.run_until_disconnected()        
+        try:
+            await client.start(bot_token=config['bot_token'])
+            print("Bot is running...")
 
+            client.add_event_handler(start, events.NewMessage(pattern="/start"))
+            client.add_event_handler(sourcecode, events.NewMessage(pattern="/sourcecode"))
+            client.add_event_handler(spoilerize_message, events.NewMessage(pattern="/spoilerize"))
 
-    except Exception as e:
-        print(f"Bot disconnected due to an error:\n{e}\nRestarting in 5 seconds...")
-        time.sleep(5)
+            await client.run_until_disconnected()
+
+        except Exception as e:
+            print(f"Bot disconnected due to an error:\n{e}")
+            print("Restarting in 5 seconds...")
+            await asyncio.sleep(5)
+        finally:
+            await client.disconnect()
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
