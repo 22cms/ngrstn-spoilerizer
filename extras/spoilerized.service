@@ -1,0 +1,13 @@
+#SystemD service template for auto-start
+[Unit]
+Description=Ngrstn Spoilerizer Bot
+After=network.target
+
+[Service]
+WorkingDirectory=/home/alarm/Documents/ngrstn-spoilerizer/
+ExecStart=/home/alarm/Documents/ngrstn-spoilerizer/venv/bin/python spoilerizer.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
