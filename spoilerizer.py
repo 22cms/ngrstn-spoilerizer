@@ -1,6 +1,10 @@
+import io
 import json
 import time
 import asyncio
+import os
+import tempfile
+from PIL import Image
 from telethon.extensions import markdown
 from telethon import TelegramClient, events, types
 
@@ -35,27 +39,86 @@ async def spoilerize_message(event):
     
     files = []
     message_list = [message_to_delete]
-    if message_to_delete.media:
+
+    # Sticker handling: Prepare buffers for re-uploading
+    if message_to_delete.sticker:
+        if message_to_delete.file.ext == '.tgs':
+            await event.reply("Sorry! Only raster stickers can be spoilerized at the moment")
+            return
+
+        if message_to_delete.file.ext == '.webp':
+            print("Sticker to JPEG conversion and upload...")
+            img_buffer = await message_to_delete.download_media(file=io.BytesIO())
+            with Image.open(img_buffer) as img:
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
+                final_buffer = io.BytesIO()
+                img.save(final_buffer, format="JPEG")
+                final_buffer.seek(0)
+                uploaded_file = await event.client.upload_file(final_buffer, file_name="sticker.jpg")
+                files = [types.InputMediaUploadedPhoto(file=uploaded_file)]
+
+        elif message_to_delete.file.ext == '.webm':
+            print("Animated sticker to MP4 conversion and upload...")
+            buffer = await message_to_delete.download_media(file=io.BytesIO())
+            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_in:
+                tmp_in.write(buffer.getvalue())
+                tmp_in_path = tmp_in.name
+            
+            tmp_out_path = tmp_in_path + ".mp4"
+            try:
+                # COnvert to H.264 YUV420P with no alpha channel
+                process = await asyncio.create_subprocess_exec(
+                    'ffmpeg', '-i', tmp_in_path, 
+                    '-movflags', 'faststart', 
+                    '-pix_fmt', 'yuv420p', 
+                    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 
+                    '-y', tmp_out_path,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL
+                )
+                await process.wait()
+                
+                uploaded_file = await event.client.upload_file(tmp_out_path)
+                files = [types.InputMediaUploadedDocument(
+                    file=uploaded_file,
+                    mime_type='video/mp4',
+                    attributes=[types.DocumentAttributeVideo(
+                        duration=0,
+                        w=512,
+                        h=512,
+                        supports_streaming=True
+                    )]
+                )]
+            finally:
+                if os.path.exists(tmp_in_path): os.remove(tmp_in_path)
+                if os.path.exists(tmp_out_path): os.remove(tmp_out_path)
+
+    elif message_to_delete.media:
         message_list = await fetch_album(event) if message_to_delete.grouped_id else message_list
         files = [msg.media for msg in message_list]
-        for item in files: item.spoiler = True
-
 
     if files == []:
         await event.client.send_message(entity=event.chat_id, message=text)
     else:
+        # Set spoiler attribute for server-side media objects
+        for item in files:
+            if hasattr(item, 'spoiler'):
+                item.spoiler = True
+
         await event.client.send_file(
             entity=event.chat_id, 
             file=files if len(files) > 1 else files[0], 
-            caption=text
-            )
+            caption=text,
+            spoiler=True
+        )
 
     try:
         await event.message.delete()
         for message in message_list:
             await message.delete()
     except Exception as e:
-        await event.reply(f"Failed to delete messages: make sure the bot has the required admin rights.\n\n{e}")
+        await event.reply(f"Failed to delete messages: make sure the bot has the required admin rights.\n\nError: {e}")
 
 
 # Helper Functions 'n Classes
