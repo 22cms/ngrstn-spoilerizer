@@ -71,8 +71,8 @@ async def spoilerize_message(event):
                 # Convert to H.264 with no alpha channel
                 process = await asyncio.create_subprocess_exec(
                    'ffmpeg', '-i', tmp_in_path, 
-                    '-c', 'copy',                # Copia i flussi senza ricodifica
-                    '-movflags', 'faststart',    # Sposta l'indice a inizio file (ottimo per web)
+                    '-c', 'copy',
+                    '-movflags', 'faststart',
                    '-y', tmp_out_path,
                     stdout=asyncio.subprocess.DEVNULL,
                     stderr=asyncio.subprocess.DEVNULL
