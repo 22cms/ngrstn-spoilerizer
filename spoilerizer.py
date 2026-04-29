@@ -1,3 +1,4 @@
+from concurrent.futures import process
 import io
 import json
 import time
@@ -67,17 +68,17 @@ async def spoilerize_message(event):
             
             tmp_out_path = tmp_in_path + ".mp4"
             try:
-                # COnvert to H.264 YUV420P with no alpha channel
+                # Convert to H.264 with no alpha channel
                 process = await asyncio.create_subprocess_exec(
-                    'ffmpeg', '-i', tmp_in_path, 
-                    '-movflags', 'faststart', 
-                    '-pix_fmt', 'yuv420p', 
-                    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 
-                    '-y', tmp_out_path,
+                   'ffmpeg', '-i', tmp_in_path, 
+                    '-c', 'copy',                # Copia i flussi senza ricodifica
+                    '-movflags', 'faststart',    # Sposta l'indice a inizio file (ottimo per web)
+                   '-y', tmp_out_path,
                     stdout=asyncio.subprocess.DEVNULL,
                     stderr=asyncio.subprocess.DEVNULL
-                )
+                )               
                 await process.wait()
+
                 
                 uploaded_file = await event.client.upload_file(tmp_out_path)
                 files = [types.InputMediaUploadedDocument(
